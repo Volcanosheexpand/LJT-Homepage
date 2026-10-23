@@ -15,23 +15,32 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
+            const { owner, repo } = context.repo;
+            // Try workflow build type first
             try {
-              await github.rest.repos.createPagesSite({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
+              await github.request('POST /repos/{owner}/{repo}/pages', {
+                owner, repo,
                 build_type: 'workflow'
               });
-              console.log('Pages site created');
+              console.log('Created with workflow build type');
+              return;
             } catch (e) {
-              console.log('Create failed: ' + e.message);
-              try {
-                await github.rest.repos.updatePagesSite({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  build_type: 'workflow'
-                });
-                console.log('Pages site updated');
-              } catch (e2) {
-                console.log('Update failed: ' + e2.message);
-              }
+              console.log('Workflow build type failed: ' + e.message);
+            }
+            // Try legacy branch source
+            try {
+              await github.request('POST /repos/{owner}/{repo}/pages', {
+                owner, repo,
+                source: { branch: 'master', path: '/' }
+              });
+              console.log('Created with legacy branch source');
+            } catch (e) {
+              console.log('Legacy source failed: ' + e.message);
+            }
+            // Check current status
+            try {
+              const res = await github.request('GET /repos/{owner}/{repo}/pages', { owner, repo });
+              console.log('Pages status: ' + JSON.stringify(res.data));
+            } catch (e) {
+              console.log('Get pages failed: ' + e.message);
             }

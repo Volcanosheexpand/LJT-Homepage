@@ -1,0 +1,21 @@
+name: Enable Pages
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+
+jobs:
+  enable:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enable GitHub Pages
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Trying to create Pages site..."
+          gh api --method POST /repos/${{ github.repository }}/pages -f build_type=workflow 2>&1 || true
+          echo "Checking Pages status..."
+          gh api /repos/${{ github.repository }}/pages 2>&1 || true
